@@ -83,27 +83,46 @@
     <script>
         (async() => {
 
-            const amountIds = {
-                amountAr: "amountAr",
-                amountUy: "amountUy",
-                amountUsd: "amountUsd",
+            const calculator = {
+                ar: "amountAr",
+                uy: "amountUy",
+                usd: "amountUsd",
+                price: "calculatorPrices",
             };
+
+            const pricesList = "pricesList";
 
             const main = async() => {
                 await loadPrices();
                 setEvents();
             };
 
+            const getValue = (id) => {
+                return document.getElementById(id).value;
+            };
+
+            const getFloatValue = (id) => {
+                return parseFloat(getValue(id));
+            };
+
+            const setValue = (id, value) => {
+                document.getElementById(id).value = value;
+            };
+
+            const setContent = (id, content) => {
+                document.getElementById(id).innerHTML = content;
+            };
+
             const eventAmountKeyUp = (event, field) => {
                 const value = parseFloat(event.target.value);
                 if (value && value > 0) {
-                    const price = parseFloat(document.getElementById("calculatorPrices").value);
+                    const price = getFloatValue(calculator.price);
                     switch (field) {
-                        case amountIds.amountAr:
-                            document.getElementById(amountIds.amountUsd).value = (value / price).toFixed(2);
+                        case calculator.ar:
+                            setValue(calculator.usd, (value / price).toFixed(2));
                             break;
-                        case amountIds.amountUsd:
-                            document.getElementById(amountIds.amountAr).value = value * price;
+                        case calculator.usd:
+                            setValue(calculator.ar, value * price);
                             break;
                         default:
                     }
@@ -113,10 +132,10 @@
             };
 
             const setEvents = () => {
-                document.getElementById(amountIds.amountAr)
-                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, amountIds.amountAr));
-                document.getElementById(amountIds.amountUsd)
-                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, amountIds.amountUsd));
+                document.getElementById(calculator.ar)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.ar));
+                document.getElementById(calculator.usd)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.usd));
             };
 
             const loadPrices = async() => {
@@ -133,16 +152,18 @@
             };
 
             const loadCalculatorPrices = (prices) => {
-                const calculatorPrices = document.getElementById("calculatorPrices");
-                calculatorPrices.innerHTML = prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices);
+                setContent(
+                    calculator.price,
+                    prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices)
+                );
             };
 
             const loadPriceList = (prices) => {
-                const pricesList = document.getElementById("pricesList");
-                pricesList.innerHTML = prices.map(
-                    (price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
-                    prices
-                );
+                setContent(
+                    pricesList,
+                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
+                        prices
+                    ));
             };
 
             const getPrexPrice = async() => {
@@ -173,9 +194,7 @@
             <div class="col col-md-12">
                 <div class="card">
                     <h3 class="card-title">Cambio</h3>
-                    Seleccioná el tipo de cambio y fijate si te sirve. Podés cargar pesos argentinos, pesos uruguayos o dólares americanos. Messi te hace la conversión.
-                    <br><br>
-                    <div class="form-control-group">
+                    <div style="margin-top: 16px;" class="form-control-group">
                         <div class="form-control">
                             <input id="amountAr" type="number" step="0.01" placeholder="🇦🇷 $AR">
                         </div>
@@ -211,8 +230,6 @@
             <div class="col col-md-12">
                 <div class="card">
                     <h3 class="card-title">Buscar</h3>
-                    Buscá rápidamente un producto y compará precios. Ojalá te sirva el cambio, amigo.
-                    <br><br>
                     <!-- <input type="text" placeholder="Descripción del producto">
                     <ul class="card-actions">
                         <li><button class="button-primary">Buscar</button></li>
@@ -235,6 +252,7 @@
                     luchando por determinar si te sirve comprar. Ya no más, ahora tenés a Messi para ayudarte y resolver todo en el mismo lugar.</p>
                 <p>Si por casualidad codeás o querés sugerir algo, pasate por <a href="https://github.com/bcattaneo/messi" target="_blank">bcattaneo/messi</a>.</p>
             </div>
+        </div>
     </section>
 </body>
 
