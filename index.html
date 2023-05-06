@@ -53,6 +53,15 @@
             transform: rotate(-45deg);
         }
         
+        .button-meli {
+            background-image: url("meli_logo.png");
+            background-position: 5px center;
+            background-repeat: no-repeat;
+            width: 145px;
+            height: 40px;
+            background-color: #FFF159;
+        }
+        
         @media (max-width: 1024px) {
             select {
                 font-size: 40px;
@@ -89,12 +98,20 @@
                 usd: "amountUsd",
                 price: "calculatorPrices",
             };
-
+            const search = {
+                value: "searchValue",
+                form: "searchForm",
+            }
             const pricesList = "pricesList";
 
             const main = async() => {
                 await loadPrices();
                 setEvents();
+            };
+
+            const fetchText = async(url) => {
+                const response = await fetch(url);
+                return await response.text();
             };
 
             const getValue = (id) => {
@@ -131,11 +148,22 @@
                 }
             };
 
+            const eventSearchSubmit = async(event) => {
+                event.preventDefault();
+                const value = getValue(search.value);
+                if (value && value.trim() != "") {
+                    // const text = await fetchText(`https://api.allorigins.win/get?url=${encodeURIComponent('https://listado.mercadolibre.com.uy/dolce-gusto')}`);
+                    window.open(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}`, "_blank");
+                }
+            };
+
             const setEvents = () => {
                 document.getElementById(calculator.ar)
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.ar));
                 document.getElementById(calculator.usd)
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.usd));
+                document.getElementById(search.form)
+                    .addEventListener("submit", (event) => eventSearchSubmit(event));
             };
 
             const loadPrices = async() => {
@@ -167,11 +195,8 @@
             };
 
             const getPrexPrice = async() => {
-                const defaultPrice = parseFloat(430);
-                const url = "https://www.prexcard.com/hacelabien";
                 try {
-                    const response = await fetch(url);
-                    const text = await response.text();
+                    const text = await fetchText("https://www.prexcard.com/hacelabien");
                     return parseFloat(
                         /<p class='cambioPesosArg'>\$AR (.*)<\/p>/g
                         .exec(text)[1]
@@ -179,7 +204,7 @@
                     ).toFixed(2);
                 } catch (ex) {
                     console.error(ex);
-                    return defaultPrice;
+                    return parseFloat(430);
                 }
             };
 
@@ -230,14 +255,12 @@
             <div class="col col-md-12">
                 <div class="card">
                     <h3 class="card-title">Buscar</h3>
-                    <!-- <input type="text" placeholder="Descripción del producto">
-                    <ul class="card-actions">
-                        <li><button class="button-primary">Buscar</button></li>
-                    </ul> -->
-                    <strong>En construcción...</strong>
-                    <div class="progress-bar">
-                        <span class="progress-bar-green" style="width: 20%;"></span>
-                    </div>
+                    <form id="searchForm">
+                        <input id="searchValue" style="margin-top: 16px;" type="text" placeholder="Descripción del producto">
+                        <ul class="card-actions">
+                            <li><button type="submit" class="button-primary button-meli"></button></li>
+                        </ul>
+                    </form>
                 </div>
             </div>
         </div>
