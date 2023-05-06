@@ -53,6 +53,15 @@
             transform: rotate(-45deg);
         }
         
+        .button-meli {
+            background-image: url("meli_logo.png");
+            background-position: 5px center;
+            background-repeat: no-repeat;
+            width: 145px;
+            height: 40px;
+            background-color: #FFF159;
+        }
+        
         @media (max-width: 1024px) {
             select {
                 font-size: 40px;
@@ -83,27 +92,54 @@
     <script>
         (async() => {
 
-            const amountIds = {
-                amountAr: "amountAr",
-                amountUy: "amountUy",
-                amountUsd: "amountUsd",
+            const calculator = {
+                ar: "amountAr",
+                uy: "amountUy",
+                usd: "amountUsd",
+                price: "calculatorPrices",
             };
+            const search = {
+                value: "searchValue",
+                form: "searchForm",
+            }
+            const pricesList = "pricesList";
 
             const main = async() => {
                 await loadPrices();
                 setEvents();
             };
 
+            const fetchText = async(url) => {
+                const response = await fetch(url);
+                return await response.text();
+            };
+
+            const getValue = (id) => {
+                return document.getElementById(id).value;
+            };
+
+            const getFloatValue = (id) => {
+                return parseFloat(getValue(id));
+            };
+
+            const setValue = (id, value) => {
+                document.getElementById(id).value = value;
+            };
+
+            const setContent = (id, content) => {
+                document.getElementById(id).innerHTML = content;
+            };
+
             const eventAmountKeyUp = (event, field) => {
                 const value = parseFloat(event.target.value);
                 if (value && value > 0) {
-                    const price = parseFloat(document.getElementById("calculatorPrices").value);
+                    const price = getFloatValue(calculator.price);
                     switch (field) {
-                        case amountIds.amountAr:
-                            document.getElementById(amountIds.amountUsd).value = (value / price).toFixed(2);
+                        case calculator.ar:
+                            setValue(calculator.usd, (value / price).toFixed(2));
                             break;
-                        case amountIds.amountUsd:
-                            document.getElementById(amountIds.amountAr).value = value * price;
+                        case calculator.usd:
+                            setValue(calculator.ar, value * price);
                             break;
                         default:
                     }
@@ -112,11 +148,22 @@
                 }
             };
 
+            const eventSearchSubmit = async(event) => {
+                event.preventDefault();
+                const value = getValue(search.value);
+                if (value && value.trim() != "") {
+                    // const text = await fetchText(`https://api.allorigins.win/get?url=${encodeURIComponent('https://listado.mercadolibre.com.uy/dolce-gusto')}`);
+                    window.open(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}`, "_blank");
+                }
+            };
+
             const setEvents = () => {
-                document.getElementById(amountIds.amountAr)
-                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, amountIds.amountAr));
-                document.getElementById(amountIds.amountUsd)
-                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, amountIds.amountUsd));
+                document.getElementById(calculator.ar)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.ar));
+                document.getElementById(calculator.usd)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.usd));
+                document.getElementById(search.form)
+                    .addEventListener("submit", (event) => eventSearchSubmit(event));
             };
 
             const loadPrices = async() => {
@@ -133,24 +180,23 @@
             };
 
             const loadCalculatorPrices = (prices) => {
-                const calculatorPrices = document.getElementById("calculatorPrices");
-                calculatorPrices.innerHTML = prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices);
-            };
-
-            const loadPriceList = (prices) => {
-                const pricesList = document.getElementById("pricesList");
-                pricesList.innerHTML = prices.map(
-                    (price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
-                    prices
+                setContent(
+                    calculator.price,
+                    prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices)
                 );
             };
 
+            const loadPriceList = (prices) => {
+                setContent(
+                    pricesList,
+                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
+                        prices
+                    ));
+            };
+
             const getPrexPrice = async() => {
-                const defaultPrice = parseFloat(430);
-                const url = "https://www.prexcard.com/hacelabien";
                 try {
-                    const response = await fetch(url);
-                    const text = await response.text();
+                    const text = await fetchText("https://www.prexcard.com/hacelabien");
                     return parseFloat(
                         /<p class='cambioPesosArg'>\$AR (.*)<\/p>/g
                         .exec(text)[1]
@@ -158,7 +204,7 @@
                     ).toFixed(2);
                 } catch (ex) {
                     console.error(ex);
-                    return defaultPrice;
+                    return parseFloat(430);
                 }
             };
 
@@ -173,9 +219,7 @@
             <div class="col col-md-12">
                 <div class="card">
                     <h3 class="card-title">Cambio</h3>
-                    Seleccioná el tipo de cambio y fijate si te sirve. Podés cargar pesos argentinos, pesos uruguayos o dólares americanos. Messi te hace la conversión.
-                    <br><br>
-                    <div class="form-control-group">
+                    <div style="margin-top: 16px;" class="form-control-group">
                         <div class="form-control">
                             <input id="amountAr" type="number" step="0.01" placeholder="🇦🇷 $AR">
                         </div>
@@ -211,16 +255,12 @@
             <div class="col col-md-12">
                 <div class="card">
                     <h3 class="card-title">Buscar</h3>
-                    Buscá rápidamente un producto y compará precios. Ojalá te sirva el cambio, amigo.
-                    <br><br>
-                    <!-- <input type="text" placeholder="Descripción del producto">
-                    <ul class="card-actions">
-                        <li><button class="button-primary">Buscar</button></li>
-                    </ul> -->
-                    <strong>En construcción...</strong>
-                    <div class="progress-bar">
-                        <span class="progress-bar-green" style="width: 20%;"></span>
-                    </div>
+                    <form id="searchForm">
+                        <input id="searchValue" style="margin-top: 16px;" type="text" placeholder="Descripción del producto">
+                        <ul class="card-actions">
+                            <li><button type="submit" class="button-primary button-meli"></button></li>
+                        </ul>
+                    </form>
                 </div>
             </div>
         </div>
@@ -235,6 +275,7 @@
                     luchando por determinar si te sirve comprar. Ya no más, ahora tenés a Messi para ayudarte y resolver todo en el mismo lugar.</p>
                 <p>Si por casualidad codeás o querés sugerir algo, pasate por <a href="https://github.com/bcattaneo/messi" target="_blank">bcattaneo/messi</a>.</p>
             </div>
+        </div>
     </section>
 </body>
 
