@@ -62,6 +62,26 @@
             background-color: #FFF159;
         }
         
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #FF3D00;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
         @media (max-width: 1024px) {
             select {
                 font-size: 40px;
@@ -91,6 +111,12 @@
     </style>
     <script>
         (async() => {
+            const currencies = {
+                "dólares": "U$S",
+                "dólar": "U$S",
+                "pesos": "$UY",
+                "peso": "$UY",
+            };
 
             const calculator = {
                 ar: "amountAr",
@@ -101,6 +127,7 @@
             const search = {
                 value: "searchValue",
                 form: "searchForm",
+                results: "searchResults",
             }
             const pricesList = "pricesList";
 
@@ -151,10 +178,44 @@
             const eventSearchSubmit = async(event) => {
                 event.preventDefault();
                 const value = getValue(search.value);
-                if (value && value.trim() != "") {
-                    // const text = await fetchText(`https://api.allorigins.win/get?url=${encodeURIComponent('https://listado.mercadolibre.com.uy/dolce-gusto')}`);
-                    window.open(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}`, "_blank");
+                if (!value || value.trim() == "") {
+                    return;
                 }
+
+                const komet = "https://komet.cattaneo.uy/?headers=cors&url="; // https://github.com/bcattaneo/komet
+                const text = await fetchText(`${komet}https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`);
+                const fakeDom = new DOMParser().parseFromString(text, "text/html");
+
+                const items = [].slice.call(fakeDom.getElementsByClassName("ui-search-result-image__element shops__image-element lazy-loadable"))
+                    .map((e) => [e.alt.trim(), e.dataset.src]);
+
+                if (!items) {
+                    // TODO: not found
+                    return;
+                }
+
+                const prices = [].slice.call(fakeDom.getElementsByClassName("price-tag-text-sr-only"))
+                    .map((e) => e.innerHTML.trim())
+                    .filter((e) => /^[0-9]+ (?:dólares|dólar|pesos|peso)(?: con [0-9]+ centavos)?$/.test(e))
+                    .map((e) => {
+                        const groups = /^([0-9]+) (dólares|dólar|pesos|peso)(?: con ([0-9]+) centavos)?$/.exec(e);
+                        const amount = groups[1];
+                        const currency = groups[2];
+                        const cents = groups[3];
+                        return `${currencies[currency]} ${amount}${cents ? "." + cents : ""}`;
+                    });
+
+                // Merge prices
+                prices.map((price, ind) => items[ind].push(price));
+
+                console.log(items);
+
+                setContent(
+                    search.results,
+                    items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="price">${items[2]}</p></div></div>`),
+                );
+
+                setValue(search.value, "");
             };
 
             const setEvents = () => {
@@ -258,11 +319,34 @@
                     <form id="searchForm">
                         <input id="searchValue" style="margin-top: 16px;" type="text" placeholder="Descripción del producto">
                         <ul class="card-actions">
-                            <li><button type="submit" class="button-primary button-meli"></button></li>
+                            <li><button type="submit" class="button-primary">Buscar</button></li>
+                            <!-- <li><button type="submit" class="button-primary button-meli"></button></li> -->
                         </ul>
                     </form>
+                    <div id="searchResults" class="pricing-table row">
+                        <!-- <div class="col col-md-4"><div class="package"><ul class="features"><img width="160px" height="160px" src="logo.png" /></ul><h6>Startup</h6><hr><p class="price">$49</p></div></div> -->
+                        <!-- <span class="align-center loader"></span> -->
+                    </div>
                 </div>
             </div>
+            <!-- <div class="col col-md-12">
+                <div class="card">
+                    <div id="disqus_thread"></div>
+                    <script>
+                        var disqus_config = function() {
+                            this.page.url = "https://messi.uy";
+                        };
+                        (function() {
+                            var d = document,
+                                s = d.createElement('script');
+                            s.src = 'https://messiuy.disqus.com/embed.js';
+                            s.setAttribute('data-timestamp', +new Date());
+                            (d.head || d.body).appendChild(s);
+                        })();
+                    </script>
+                    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+                </div>
+            </div> -->
         </div>
     </section>
     <section>
