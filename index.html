@@ -35,24 +35,6 @@
             -moz-appearance: textfield;
         }
         
-        body:after {
-            content: "beta";
-            position: fixed;
-            width: 80px;
-            height: 25px;
-            background: #74ACDF;
-            top: 7px;
-            left: -20px;
-            text-align: center;
-            font-size: 13px;
-            font-family: sans-serif;
-            text-transform: uppercase;
-            font-weight: bold;
-            color: #fff;
-            line-height: 27px;
-            transform: rotate(-45deg);
-        }
-        
         .button-meli {
             background-image: url("meli_logo.png");
             background-position: 5px center;
@@ -187,7 +169,6 @@
                 "pesos": "$UY",
                 "peso": "$UY",
             };
-
             const calculator = {
                 ar: "amountAr",
                 uy: "amountUy",
@@ -198,7 +179,7 @@
                 value: "searchValue",
                 form: "searchForm",
                 results: "searchResults",
-            }
+            };
             const pricesList = "pricesList";
 
             const main = async() => {
@@ -209,6 +190,11 @@
             const fetchText = async(url) => {
                 const response = await fetch(url);
                 return await response.text();
+            };
+
+            const fetchJson = async(url) => {
+                const response = await fetch(url);
+                return await response.json();
             };
 
             const getValue = (id) => {
@@ -230,19 +216,32 @@
             const eventAmountKeyUp = (event, field) => {
                 const value = parseFloat(event.target.value);
                 if (value && value > 0) {
-                    const price = getFloatValue(calculator.price);
+                    const prices = getValue(calculator.price).split(",");
+                    const priceUsd = parseFloat(prices[0]);
+                    const priceUy = parseFloat(prices[1]);
+
                     switch (field) {
                         case calculator.ar:
-                            setValue(calculator.usd, (value / price).toFixed(2));
+                            setValue(calculator.usd, (value / priceUsd).toFixed(2));
+                            setValue(calculator.uy, (value * priceUy).toFixed(2));
                             break;
                         case calculator.usd:
-                            setValue(calculator.ar, value * price);
+                            setValue(calculator.ar, (value * priceUsd).toFixed(2));
+                            setValue(calculator.uy, (value * priceUsd * priceUy).toFixed(2));
+                            break;
+                        case calculator.uy:
+                            setValue(calculator.ar, (value / priceUy).toFixed(2));
+                            setValue(calculator.usd, (value / priceUy / priceUsd).toFixed(2));
                             break;
                         default:
                     }
                 } else {
                     event.target.reportValidity();
                 }
+            };
+
+            const toKometUrl = (url) => {
+                return `https://komet.cattaneo.uy/?headers=cors&url=${url}`;
             };
 
             const eventSearchSubmit = async(event) => {
@@ -255,8 +254,7 @@
                 setValue(search.value, "");
                 setContent(search.results, '<div class="loading"><div class="spinner"><div class="rect1"></div><div class="rect2"></div><div class="rect3"></div><div class="rect4"></div><div class="rect5"></div></div></div>');
 
-                const komet = "https://komet.cattaneo.uy/?headers=cors&url="; // https://github.com/bcattaneo/komet
-                const text = await fetchText(`${komet}https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`);
+                const text = await fetchText(toKometUrl(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`));
                 const fakeDom = new DOMParser().parseFromString(text, "text/html");
 
                 const items = [].slice.call(fakeDom.getElementsByClassName("ui-search-result-image__element shops__image-element lazy-loadable"))
@@ -293,34 +291,52 @@
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.ar));
                 document.getElementById(calculator.usd)
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.usd));
+                document.getElementById(calculator.uy)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.uy));
                 document.getElementById(search.form)
                     .addEventListener("submit", (event) => eventSearchSubmit(event));
             };
 
             const loadPrices = async() => {
                 const prexPrice = await getPrexPrice();
+                const [
+                    brouUsdBuy,
+                    brouUsdSell
+                ] = await getBrouUsd();
+                const priceUy = (brouUsdSell / prexPrice).toFixed(4);
+
                 loadCalculatorPrices([{
                     name: "PREX",
-                    price: prexPrice
+                    usd: prexPrice,
+                    uy: priceUy,
                 }]);
+
                 loadPriceList([{
                     name: "🇺🇸 U$S PREX",
                     buy: prexPrice,
                     sell: 0
+                }, {
+                    name: "🇺🇾 $UY PREX",
+                    buy: priceUy,
+                    sell: 0
+                }, {
+                    name: "🇺🇸 U$S BROU",
+                    buy: brouUsdBuy,
+                    sell: brouUsdSell
                 }]);
             };
 
             const loadCalculatorPrices = (prices) => {
                 setContent(
                     calculator.price,
-                    prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices)
+                    prices.map((price) => `<option value="${price.usd},${price.uy}">${price.name}</option>`).join("")
                 );
             };
 
             const loadPriceList = (prices) => {
                 setContent(
                     pricesList,
-                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`)
+                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`).join("")
                 );
             };
 
@@ -335,6 +351,17 @@
                 } catch (ex) {
                     console.error(ex);
                     return parseFloat(430);
+                }
+            };
+
+            const getBrouUsd = async() => {
+                try {
+                    const json = await fetchJson(toKometUrl("https://cotizaciones-brou-v2-e449.fly.dev/currency/latest"));
+                    const usd = json.rates.USD;
+                    return [parseFloat(usd.buy), parseFloat(usd.sell)];
+                } catch (ex) {
+                    console.error(ex);
+                    return [parseFloat(39), parseFloat(40)];
                 }
             };
 
@@ -359,7 +386,7 @@
                     </div>
                     <div style="margin-top: 8px;" class="form-control-group">
                         <div class="form-control">
-                            <input id="amountUy" type="number" step="0.01" placeholder="🇺🇾 $UY" disabled>
+                            <input id="amountUy" type="number" step="0.01" placeholder="🇺🇾 $UY">
                         </div>
                         <div class="form-control">
                             <input id="amountUsd" type="number" step="0.01" placeholder="🇺🇸 U$S">
@@ -389,13 +416,9 @@
                         <input id="searchValue" style="margin-top: 16px;" type="text" placeholder="Descripción del producto">
                         <ul class="card-actions">
                             <li><button type="submit" class="button-primary">Buscar</button></li>
-                            <!-- <li><button type="submit" class="button-primary button-meli"></button></li> -->
                         </ul>
                     </form>
-                    <div id="searchResults" class="pricing-table row">
-                        <!-- <div class="col col-md-4"><div class="package"><ul class="features"><img width="160px" height="160px" src="logo.png" /></ul><h6>Startup</h6><hr><p class="price">$49</p></div></div> -->
-                        <!-- <span class="align-center loader"></span> -->
-                    </div>
+                    <div id="searchResults" class="pricing-table row"></div>
                 </div>
             </div>
             <div class="col col-md-12">

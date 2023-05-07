@@ -14,7 +14,10 @@ Seguramente tenés la calculadora en una mano, Google o MercadoLibre en otra; pa
 
 El proyecto se publica automáticamente en [www.messi.uy](https://www.messi.uy)
 
-Utiliza [Komet](https://github.com/bcattaneo/komet) como HTTP proxy para obtener datos de MercadoLibre
+### Integraciones
+* [Komet](https://github.com/bcattaneo/komet) como HTTP proxy para obtener datos de MercadoLibre
+* Cotización dólar PREX desde la [Web de PREX](https://www.prexcard.com/hacelabien)
+* ["Cotizaciones BROU"](https://github.com/gmanriqueUy/cotizaciones-brou) para obtener cotización del dólar BROU en Uruguay
 
 ### Contribuir
 El proyecto es bien simple, sólo un archivo _index.html_, nada más. Sentite libre de crear un issue o PR.
