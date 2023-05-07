@@ -35,24 +35,6 @@
             -moz-appearance: textfield;
         }
         
-        body:after {
-            content: "beta";
-            position: fixed;
-            width: 80px;
-            height: 25px;
-            background: #74ACDF;
-            top: 7px;
-            left: -20px;
-            text-align: center;
-            font-size: 13px;
-            font-family: sans-serif;
-            text-transform: uppercase;
-            font-weight: bold;
-            color: #fff;
-            line-height: 27px;
-            transform: rotate(-45deg);
-        }
-        
         .button-meli {
             background-image: url("meli_logo.png");
             background-position: 5px center;
@@ -62,23 +44,86 @@
             background-color: #FFF159;
         }
         
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #FFF;
-            border-bottom-color: #FF3D00;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+        .meli-price {
+            margin: 15px 0 0 0;
+            font-size: 36px;
+            line-height: 1.2
         }
         
-        @keyframes rotation {
-            0% {
-                transform: rotate(0deg);
-            }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            text-align: center;
+            background: radial-gradient(rgba(20, 20, 20, .8), rgba(0, 0, 0, .8));
+            background: -webkit-radial-gradient(rgba(20, 20, 20, .8), rgba(0, 0, 0, .8));
+        }
+        
+        .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -20px;
+            margin-left: -25px;
+            width: 50px;
+            height: 40px;
+            text-align: center;
+            font-size: 10px;
+        }
+        
+        .spinner>div {
+            z-index: 999;
+            background-color: #74ACDF;
+            height: 100%;
+            width: 6px;
+            display: inline-block;
+            -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
+            animation: sk-stretchdelay 1.2s infinite ease-in-out;
+        }
+        
+        .spinner .rect2 {
+            -webkit-animation-delay: -1.1s;
+            animation-delay: -1.1s;
+        }
+        
+        .spinner .rect3 {
+            -webkit-animation-delay: -1.0s;
+            animation-delay: -1.0s;
+        }
+        
+        .spinner .rect4 {
+            -webkit-animation-delay: -0.9s;
+            animation-delay: -0.9s;
+        }
+        
+        .spinner .rect5 {
+            -webkit-animation-delay: -0.8s;
+            animation-delay: -0.8s;
+        }
+        
+        @-webkit-keyframes sk-stretchdelay {
+            0%,
+            40%,
             100% {
-                transform: rotate(360deg);
+                -webkit-transform: scaleY(0.4)
+            }
+            20% {
+                -webkit-transform: scaleY(1.0)
+            }
+        }
+        
+        @keyframes sk-stretchdelay {
+            0%,
+            40%,
+            100% {
+                transform: scaleY(0.4);
+                -webkit-transform: scaleY(0.4);
+            }
+            20% {
+                transform: scaleY(1.0);
+                -webkit-transform: scaleY(1.0);
             }
         }
         
@@ -96,16 +141,23 @@
             select:focus {
                 background-image: none;
             }
+            button[type="submit"],
             input[type="text"],
-            input[type="number"] {
-                font-size: 40px;
-                line-height: 40px;
-                height: 70px;
-            }
+            input[type="number"],
             table {
                 font-size: 40px;
                 line-height: 40px;
                 height: 70px;
+            }
+            h6,
+            #searchForm,
+            #searchResults {
+                font-size: 40px;
+                line-height: 40px;
+            }
+            .meli-price {
+                font-size: 55px;
+                line-height: 55px;
             }
         }
     </style>
@@ -117,7 +169,6 @@
                 "pesos": "$UY",
                 "peso": "$UY",
             };
-
             const calculator = {
                 ar: "amountAr",
                 uy: "amountUy",
@@ -128,7 +179,7 @@
                 value: "searchValue",
                 form: "searchForm",
                 results: "searchResults",
-            }
+            };
             const pricesList = "pricesList";
 
             const main = async() => {
@@ -139,6 +190,11 @@
             const fetchText = async(url) => {
                 const response = await fetch(url);
                 return await response.text();
+            };
+
+            const fetchJson = async(url) => {
+                const response = await fetch(url);
+                return await response.json();
             };
 
             const getValue = (id) => {
@@ -160,19 +216,32 @@
             const eventAmountKeyUp = (event, field) => {
                 const value = parseFloat(event.target.value);
                 if (value && value > 0) {
-                    const price = getFloatValue(calculator.price);
+                    const prices = getValue(calculator.price).split(",");
+                    const priceUsd = parseFloat(prices[0]);
+                    const priceUy = parseFloat(prices[1]);
+
                     switch (field) {
                         case calculator.ar:
-                            setValue(calculator.usd, (value / price).toFixed(2));
+                            setValue(calculator.usd, (value / priceUsd).toFixed(2));
+                            setValue(calculator.uy, (value * priceUy).toFixed(2));
                             break;
                         case calculator.usd:
-                            setValue(calculator.ar, value * price);
+                            setValue(calculator.ar, (value * priceUsd).toFixed(2));
+                            setValue(calculator.uy, (value * priceUsd * priceUy).toFixed(2));
+                            break;
+                        case calculator.uy:
+                            setValue(calculator.ar, (value / priceUy).toFixed(2));
+                            setValue(calculator.usd, (value / priceUy / priceUsd).toFixed(2));
                             break;
                         default:
                     }
                 } else {
                     event.target.reportValidity();
                 }
+            };
+
+            const toKometUrl = (url) => {
+                return `https://komet.cattaneo.uy/?headers=cors&url=${url}`;
             };
 
             const eventSearchSubmit = async(event) => {
@@ -182,15 +251,18 @@
                     return;
                 }
 
-                const komet = "https://komet.cattaneo.uy/?headers=cors&url="; // https://github.com/bcattaneo/komet
-                const text = await fetchText(`${komet}https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`);
+                setValue(search.value, "");
+                setContent(search.results, '<div class="loading"><div class="spinner"><div class="rect1"></div><div class="rect2"></div><div class="rect3"></div><div class="rect4"></div><div class="rect5"></div></div></div>');
+
+                const text = await fetchText(toKometUrl(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`));
                 const fakeDom = new DOMParser().parseFromString(text, "text/html");
 
                 const items = [].slice.call(fakeDom.getElementsByClassName("ui-search-result-image__element shops__image-element lazy-loadable"))
                     .map((e) => [e.alt.trim(), e.dataset.src]);
 
                 if (!items) {
-                    // TODO: not found
+                    // TODO: handle not found
+                    setContent(search.results, '');
                     return;
                 }
 
@@ -208,14 +280,10 @@
                 // Merge prices
                 prices.map((price, ind) => items[ind].push(price));
 
-                console.log(items);
-
                 setContent(
                     search.results,
-                    items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="price">${items[2]}</p></div></div>`),
+                    `<div style="margin-top: 5px;" class="col col-md-12">Resultados para "${value}"</div>` + items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="meli-price">${items[2]}</p></div></div>`).join("")
                 );
-
-                setValue(search.value, "");
             };
 
             const setEvents = () => {
@@ -223,36 +291,53 @@
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.ar));
                 document.getElementById(calculator.usd)
                     .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.usd));
+                document.getElementById(calculator.uy)
+                    .addEventListener("keyup", (event) => eventAmountKeyUp(event, calculator.uy));
                 document.getElementById(search.form)
                     .addEventListener("submit", (event) => eventSearchSubmit(event));
             };
 
             const loadPrices = async() => {
                 const prexPrice = await getPrexPrice();
+                const [
+                    brouUsdBuy,
+                    brouUsdSell
+                ] = await getBrouUsd();
+                const priceUy = (brouUsdSell / prexPrice).toFixed(4);
+
                 loadCalculatorPrices([{
                     name: "PREX",
-                    price: prexPrice
+                    usd: prexPrice,
+                    uy: priceUy,
                 }]);
+
                 loadPriceList([{
                     name: "🇺🇸 U$S PREX",
                     buy: prexPrice,
                     sell: 0
+                }, {
+                    name: "🇺🇾 $UY PREX",
+                    buy: priceUy,
+                    sell: 0
+                }, {
+                    name: "🇺🇸 U$S BROU",
+                    buy: brouUsdBuy,
+                    sell: brouUsdSell
                 }]);
             };
 
             const loadCalculatorPrices = (prices) => {
                 setContent(
                     calculator.price,
-                    prices.map((price) => `<option value="${price.price}">${price.name}</option>`, prices)
+                    prices.map((price) => `<option value="${price.usd},${price.uy}">${price.name}</option>`).join("")
                 );
             };
 
             const loadPriceList = (prices) => {
                 setContent(
                     pricesList,
-                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
-                        prices
-                    ));
+                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`).join("")
+                );
             };
 
             const getPrexPrice = async() => {
@@ -266,6 +351,17 @@
                 } catch (ex) {
                     console.error(ex);
                     return parseFloat(430);
+                }
+            };
+
+            const getBrouUsd = async() => {
+                try {
+                    const json = await fetchJson(toKometUrl("https://cotizaciones-brou-v2-e449.fly.dev/currency/latest"));
+                    const usd = json.rates.USD;
+                    return [parseFloat(usd.buy), parseFloat(usd.sell)];
+                } catch (ex) {
+                    console.error(ex);
+                    return [parseFloat(39), parseFloat(40)];
                 }
             };
 
@@ -290,7 +386,7 @@
                     </div>
                     <div style="margin-top: 8px;" class="form-control-group">
                         <div class="form-control">
-                            <input id="amountUy" type="number" step="0.01" placeholder="🇺🇾 $UY" disabled>
+                            <input id="amountUy" type="number" step="0.01" placeholder="🇺🇾 $UY">
                         </div>
                         <div class="form-control">
                             <input id="amountUsd" type="number" step="0.01" placeholder="🇺🇸 U$S">
@@ -320,16 +416,12 @@
                         <input id="searchValue" style="margin-top: 16px;" type="text" placeholder="Descripción del producto">
                         <ul class="card-actions">
                             <li><button type="submit" class="button-primary">Buscar</button></li>
-                            <!-- <li><button type="submit" class="button-primary button-meli"></button></li> -->
                         </ul>
                     </form>
-                    <div id="searchResults" class="pricing-table row">
-                        <!-- <div class="col col-md-4"><div class="package"><ul class="features"><img width="160px" height="160px" src="logo.png" /></ul><h6>Startup</h6><hr><p class="price">$49</p></div></div> -->
-                        <!-- <span class="align-center loader"></span> -->
-                    </div>
+                    <div id="searchResults" class="pricing-table row"></div>
                 </div>
             </div>
-            <!-- <div class="col col-md-12">
+            <div class="col col-md-12">
                 <div class="card">
                     <div id="disqus_thread"></div>
                     <script>
@@ -346,7 +438,7 @@
                     </script>
                     <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
                 </div>
-            </div> -->
+            </div>
         </div>
     </section>
     <section>
