@@ -62,29 +62,86 @@
             background-color: #FFF159;
         }
         
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #FFF;
-            border-bottom-color: #FF3D00;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-        }
-        
         .meli-price {
             margin: 15px 0 0 0;
             font-size: 36px;
             line-height: 1.2
         }
         
-        @keyframes rotation {
-            0% {
-                transform: rotate(0deg);
-            }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            text-align: center;
+            background: radial-gradient(rgba(20, 20, 20, .8), rgba(0, 0, 0, .8));
+            background: -webkit-radial-gradient(rgba(20, 20, 20, .8), rgba(0, 0, 0, .8));
+        }
+        
+        .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -20px;
+            margin-left: -25px;
+            width: 50px;
+            height: 40px;
+            text-align: center;
+            font-size: 10px;
+        }
+        
+        .spinner>div {
+            z-index: 999;
+            background-color: #74ACDF;
+            height: 100%;
+            width: 6px;
+            display: inline-block;
+            -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
+            animation: sk-stretchdelay 1.2s infinite ease-in-out;
+        }
+        
+        .spinner .rect2 {
+            -webkit-animation-delay: -1.1s;
+            animation-delay: -1.1s;
+        }
+        
+        .spinner .rect3 {
+            -webkit-animation-delay: -1.0s;
+            animation-delay: -1.0s;
+        }
+        
+        .spinner .rect4 {
+            -webkit-animation-delay: -0.9s;
+            animation-delay: -0.9s;
+        }
+        
+        .spinner .rect5 {
+            -webkit-animation-delay: -0.8s;
+            animation-delay: -0.8s;
+        }
+        
+        @-webkit-keyframes sk-stretchdelay {
+            0%,
+            40%,
             100% {
-                transform: rotate(360deg);
+                -webkit-transform: scaleY(0.4)
+            }
+            20% {
+                -webkit-transform: scaleY(1.0)
+            }
+        }
+        
+        @keyframes sk-stretchdelay {
+            0%,
+            40%,
+            100% {
+                transform: scaleY(0.4);
+                -webkit-transform: scaleY(0.4);
+            }
+            20% {
+                transform: scaleY(1.0);
+                -webkit-transform: scaleY(1.0);
             }
         }
         
@@ -195,6 +252,9 @@
                     return;
                 }
 
+                setValue(search.value, "");
+                setContent(search.results, '<div class="loading"><div class="spinner"><div class="rect1"></div><div class="rect2"></div><div class="rect3"></div><div class="rect4"></div><div class="rect5"></div></div></div>');
+
                 const komet = "https://komet.cattaneo.uy/?headers=cors&url="; // https://github.com/bcattaneo/komet
                 const text = await fetchText(`${komet}https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}')}`);
                 const fakeDom = new DOMParser().parseFromString(text, "text/html");
@@ -203,7 +263,8 @@
                     .map((e) => [e.alt.trim(), e.dataset.src]);
 
                 if (!items) {
-                    // TODO: not found
+                    // TODO: handle not found
+                    setContent(search.results, '');
                     return;
                 }
 
@@ -221,14 +282,10 @@
                 // Merge prices
                 prices.map((price, ind) => items[ind].push(price));
 
-                console.log(items);
-
                 setContent(
                     search.results,
-                    items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="meli-price">${items[2]}</p></div></div>`).join("")
+                    `<div style="margin-top: 5px;" class="col col-md-12">Resultados para "${value}"</div>` + items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="meli-price">${items[2]}</p></div></div>`).join("")
                 );
-
-                setValue(search.value, "");
             };
 
             const setEvents = () => {
