@@ -73,6 +73,12 @@
             animation: rotation 1s linear infinite;
         }
         
+        .meli-price {
+            margin: 15px 0 0 0;
+            font-size: 36px;
+            line-height: 1.2
+        }
+        
         @keyframes rotation {
             0% {
                 transform: rotate(0deg);
@@ -96,16 +102,23 @@
             select:focus {
                 background-image: none;
             }
+            button[type="submit"],
             input[type="text"],
-            input[type="number"] {
-                font-size: 40px;
-                line-height: 40px;
-                height: 70px;
-            }
+            input[type="number"],
             table {
                 font-size: 40px;
                 line-height: 40px;
                 height: 70px;
+            }
+            h6,
+            #searchForm,
+            #searchResults {
+                font-size: 40px;
+                line-height: 40px;
+            }
+            .meli-price {
+                font-size: 55px;
+                line-height: 55px;
             }
         }
     </style>
@@ -212,7 +225,7 @@
 
                 setContent(
                     search.results,
-                    items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="price">${items[2]}</p></div></div>`),
+                    items.map(items => `<div class="col col-md-12"><div class="package"><ul class="features"><img style="max-width: 200px; height: auto;" src="${items[1]}" /></ul><h6>${items[0]}</h6><hr><p class="meli-price">${items[2]}</p></div></div>`).join("")
                 );
 
                 setValue(search.value, "");
@@ -250,9 +263,8 @@
             const loadPriceList = (prices) => {
                 setContent(
                     pricesList,
-                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`,
-                        prices
-                    ));
+                    prices.map((price) => `<tr><td>${price.name}</td><td><p class="align-right"><strong>${price.buy > 0 ? price.buy : 'N/A'}</strong></p></td><td><p class="align-right"><strong>${price.sell > 0 ? price.sell : 'N/A'}</strong></p></td>`)
+                );
             };
 
             const getPrexPrice = async() => {
