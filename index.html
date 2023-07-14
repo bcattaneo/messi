@@ -266,7 +266,7 @@
                     return;
                 }
 
-                const prices = [].slice.call(fakeDom.getElementsByClassName("price-tag-text-sr-only"))
+                const prices = [].slice.call(fakeDom.getElementsByClassName("andes-visually-hidden"))
                     .map((e) => e.innerHTML.trim())
                     .filter((e) => /^[0-9]+ (?:dólares|dólar|pesos|peso)(?: con [0-9]+ centavos)?$/.test(e))
                     .map((e) => {
