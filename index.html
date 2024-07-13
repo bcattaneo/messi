@@ -346,6 +346,7 @@
                     return parseFloat(
                         /<p class='cambioPesosArg'>\$AR (.*)<\/p>/g
                         .exec(text)[1]
+                        .replace(".", "")
                         .replace(",", ".")
                     ).toFixed(2);
                 } catch (ex) {
