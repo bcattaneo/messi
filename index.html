@@ -257,7 +257,7 @@
                 const text = await fetchText(toKometUrl(`https://listado.mercadolibre.com.uy/${value.replace(" ", "-")}`));
                 const fakeDom = new DOMParser().parseFromString(text, "text/html");
 
-                const items = [].slice.call(fakeDom.getElementsByClassName("ui-search-result-image__element shops__image-element lazy-loadable"))
+                const items = [].slice.call(fakeDom.getElementsByClassName("ui-search-result-image__element"))
                     .map((e) => [e.alt.trim(), e.dataset.src]);
 
                 if (!items) {
@@ -266,15 +266,12 @@
                     return;
                 }
 
-                const prices = [].slice.call(fakeDom.getElementsByClassName("andes-visually-hidden"))
-                    .map((e) => e.innerHTML.trim())
-                    .filter((e) => /^[0-9]+ (?:dólares|dólar|pesos|peso)(?: con [0-9]+ centavos)?$/.test(e))
+                const prices = [].slice.call(fakeDom.getElementsByClassName("andes-money-amount ui-search-price__part ui-search-price__part--medium andes-money-amount--cents-superscript"))
                     .map((e) => {
-                        const groups = /^([0-9]+) (dólares|dólar|pesos|peso)(?: con ([0-9]+) centavos)?$/.exec(e);
-                        const amount = groups[1];
-                        const currency = groups[2];
-                        const cents = groups[3];
-                        return `${currencies[currency]} ${amount}${cents ? "." + cents : ""}`;
+                        const currency = e.childNodes[0].innerHTML.trim();
+                        const amount = e.childNodes[1].innerHTML.trim();
+                        const cents = e.childNodes.length > 2 ? e.childNodes[3].innerHTML.trim() : null;
+                        return `${currency} ${amount}${cents ? "." + cents : ""}`;
                     });
 
                 // Merge prices
